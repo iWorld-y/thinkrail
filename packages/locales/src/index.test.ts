@@ -1,5 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import {
+	BUNDLED_LOCALES,
+	bundledCatalog,
+	type Catalog,
 	completePlurals,
 	EN,
 	fallbackChain,
@@ -134,9 +137,64 @@ describe("validateCatalog hardening", () => {
 	});
 });
 
-test("the bundled English catalog passes its own validation", () => {
-	const result = validateCatalog(EN);
-	expect(result.ok && Object.keys(result.strings).length).toBe(Object.keys(EN).length);
+const PLURAL_FORM = /_(?:zero|one|two|few|many|other)$/;
+const PLURAL_CATEGORIES = /^(?:zero|one|two|few|many|other)$/;
+
+function pluralForms(catalog: Catalog, family: string): string[] {
+	return Object.keys(catalog)
+		.filter((key) => key.startsWith(`${family}_`))
+		.map((key) => key.slice(family.length + 1))
+		.filter((form) => PLURAL_CATEGORIES.test(form))
+		.sort();
+}
+
+function englishFamiliesIn(catalog: Catalog): string[] {
+	const families = new Set<string>();
+	for (const key of Object.keys(EN)) {
+		const family = key.replace(PLURAL_FORM, "");
+		if (family !== key && Object.hasOwn(catalog, `${family}_other`)) families.add(family);
+	}
+	return [...families];
+}
+
+function coverageGaps(catalog: Catalog): string[] {
+	const gaps = new Set<string>();
+	for (const key of Object.keys(EN)) {
+		const family = key.replace(PLURAL_FORM, "");
+		const expected = family === key ? key : `${family}_other`;
+		if (!Object.hasOwn(catalog, expected)) gaps.add(expected);
+	}
+	for (const key of Object.keys(catalog)) {
+		if (!Object.hasOwn(EN, key) && !Object.hasOwn(EN, key.replace(PLURAL_FORM, "")))
+			gaps.add(`${key}: not an English key`);
+	}
+	return [...gaps].sort();
+}
+
+describe("bundled catalogs", () => {
+	test("each one validates without dropping a string", () => {
+		for (const tag of BUNDLED_LOCALES) {
+			const catalog = bundledCatalog(tag) ?? {};
+			const result = validateCatalog(catalog);
+			expect(result.ok && Object.keys(result.strings).length).toBe(Object.keys(catalog).length);
+		}
+	});
+
+	test("each one covers every English key", () => {
+		for (const tag of BUNDLED_LOCALES) {
+			expect([tag, coverageGaps(bundledCatalog(tag) ?? {})]).toEqual([tag, []]);
+		}
+	});
+
+	test("each one carries exactly the plural forms its language needs", () => {
+		for (const tag of BUNDLED_LOCALES) {
+			const catalog = bundledCatalog(tag) ?? {};
+			const needed = [...new Intl.PluralRules(tag).resolvedOptions().pluralCategories].sort();
+			for (const family of englishFamiliesIn(catalog)) {
+				expect([tag, family, pluralForms(catalog, family)]).toEqual([tag, family, needed]);
+			}
+		}
+	});
 });
 
 describe("plural forms", () => {

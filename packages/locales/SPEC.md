@@ -12,17 +12,17 @@ tags: [i18n]
 
 The single owner of ThinkRail's UI strings and of the rules every locale source obeys
 ([[architecture]] Decision 23). It ships the bundled catalogs — `en.json` is the English source of truth
-and the file translators start from — and the pure functions that validate a catalog, name a file's
-language, and pick the language to render. Its `./react` entry holds the **one** i18next instance every
-browser surface (`apps/web`, `packages/ui`, extension web halves) renders through, so they cannot drift
-onto separate instances.
+and the file translators start from, `zh.json` its Simplified Chinese translation — and the pure
+functions that validate a catalog, name a file's language, and pick the language to render. Its `./react`
+entry holds the **one** i18next instance every browser surface (`apps/web`, `packages/ui`, extension web
+halves) renders through, so they cannot drift onto separate instances.
 
 ## Public surface
 
 - **Root `@thinkrail/locales`** (pure, browser- and server-safe, no React):
   - `EN` — the English catalog; `MessageKey` — its key union (plural suffixes `_one`/`_other`/… fold
     into the base key).
-  - `BUNDLED_LOCALES` — the tags shipped with this build (`["en"]` today) and `bundledCatalog(tag)`.
+  - `BUNDLED_LOCALES` — the tags shipped with this build (`["en", "zh"]` today) and `bundledCatalog(tag)`.
   - `SYSTEM_LOCALE` (`"system"`), `canonicalLocale(tag)`, `languageName(tag)` (own-language name via
     `Intl.DisplayNames`, first letter upper-cased), `DESKTOP_MENU_KEYS` and `DESKTOP_DIALOG_KEYS` — the keys the
     desktop's native menu, error dialogs, and startup splash render, one list each for the desktop and the web that pushes
@@ -70,7 +70,11 @@ indexed markup only for `<T>` strings. No metadata block. The instance runs with
 no setup — renders English.
 
 Keys are named by surface (`settings.language.title`, `chat.composer.placeholder`), never English text: a
-wording fix must not orphan translations. `en.json` stays sorted.
+wording fix must not orphan translations. Every bundled catalog stays sorted by key.
+
+`zh.json` is the Simplified Chinese catalog: the same key set as English, worded in Simplified Chinese,
+serving every `zh` variant through the existing `tag → base → en` chain. Its source of truth is
+`en.json`; a new English key without a `zh` value is a test failure, not a fallback.
 
 ## Boundary
 
@@ -85,6 +89,12 @@ wording fix must not orphan translations. `en.json` stays sorted.
 
 - English output is the contract tests pin: a catalog edit that changes English wording is a product
   change, reviewed like one. Plural pairs carry real English singulars (`"1 group"`, never `"1 groups"`).
+- **A bundled translation is complete for its own language.** Each bundled catalog carries exactly the
+  CLDR plural categories `Intl.PluralRules` resolves for its tag (English `_one` and `_other`, Chinese
+  `_other` alone) and nothing more, since a bundled catalog is installed as written — only runtime
+  overlays pass through `completePlurals`. Tests hold every bundled catalog to: zero strings dropped by
+  `validateCatalog`, a value for every English key (a plural family counts as covered by its `_other`),
+  no key English does not have, and exactly its plural forms.
 - **Render reads the translator as a value, never the global.** The React Compiler caches each render
   expression by its own inputs, so a helper that reads the global `t` / `currentLocale()` (or a getter
   that does) keeps the old language after a switch. Every function evaluated at render — component and
@@ -108,8 +118,9 @@ wording fix must not orphan translations. `en.json` stays sorted.
 
 ## Deferred
 
-Bundled non-English catalogs (the `BUNDLED` map is the seam), locale-aware number formats (token
-counts, cost and context percentages still use English separators), composite phrases that embed a
-translated count fragment (`chat.trust.untrustedNotice` interpolates a "1 skill" list), RTL layout (`dir`), a first-paint locale
-hint (until the host answers `locales.list`, a local language renders English for a moment), and
-translating server error text (errors would move to codes the client renders).
+Bundled languages beyond English and Simplified Chinese (the `BUNDLED` map is the seam), locale-aware
+number formats (token counts, cost and context percentages still use English separators), composite
+phrases that embed a translated count fragment (`chat.trust.untrustedNotice` interpolates a "1 skill"
+list), RTL layout (`dir`), a first-paint locale hint (until the host answers `locales.list`, a local
+language renders English for a moment), and translating server error text (errors would move to codes
+the client renders).

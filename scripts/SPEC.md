@@ -58,8 +58,10 @@ properties (`label`, `title`, `description`, `detail`, `hint`, `message`, `reaso
 `toast.*()` messages or `errorText()` fallbacks. "Text" means a run of two or more letters after trimming
 symbols, so `⌘K`, `·`, and counts pass; the bare brand `ThinkRail` is the one allowed word. It is a
 heuristic floor, not a proof: review still owns strings returned from plain functions. It also checks
-`packages/locales/en.json`: keys sorted, values non-empty, and every key (plural base for `_one`/`_other`)
-referenced as a string literal by some UI, desktop, or locales source, so removed UI leaves no orphaned
+`packages/locales/`: every locale catalog there has sorted keys (a new catalog must be sortable the same
+way as `en.json`), and `en.json` additionally has non-empty values and every key (plural base for
+`_one`/`_other`) referenced as a string literal by some UI, desktop, or locales source, so removed UI
+leaves no orphaned
 translations. Finally it builds the web TypeScript program and fails on any **render-time read of the global
 translator** ([[module-locales]] § Render reads the translator as a value): a reference to `t`, `i18n`,
 `currentLocale` or `currentTranslator` from `@thinkrail/locales/react` evaluated in a render root — a

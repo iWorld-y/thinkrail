@@ -18,8 +18,8 @@ const snapshot: LocalLocalesSnapshot = {
 };
 
 test("available languages are the bundled ones plus valid local files", () => {
-	expect(availableLocales(null)).toEqual(["en"]);
-	expect(availableLocales(snapshot)).toEqual(["en", "de"]);
+	expect(availableLocales(null)).toEqual(["en", "zh"]);
+	expect(availableLocales(snapshot)).toEqual(["en", "zh", "de"]);
 	expect(localOverlays(snapshot)).toEqual({
 		de: { "settings.language.title": "Sprache" },
 		en: { "settings.language.title": "Lingo" },
@@ -30,6 +30,7 @@ test("options mark built-in, local, and customized languages, then broken files"
 	expect(languageOptions("system", snapshot)).toEqual([
 		{ kind: "language", tag: "de", name: "Deutsch", source: "local" },
 		{ kind: "language", tag: "en", name: "English", source: "builtin+local" },
+		{ kind: "language", tag: "zh", name: "中文", source: "builtin" },
 		{
 			kind: "broken",
 			fileName: "fr.json",
@@ -40,6 +41,7 @@ test("options mark built-in, local, and customized languages, then broken files"
 	]);
 	expect(languageOptions("system", null)).toEqual([
 		{ kind: "language", tag: "en", name: "English", source: "builtin" },
+		{ kind: "language", tag: "zh", name: "中文", source: "builtin" },
 	]);
 });
 
@@ -53,5 +55,7 @@ test("a selected language whose file is gone is listed as missing and renders En
 test("system follows the browser languages over available catalogs", () => {
 	expect(effectiveLocale("system", snapshot, ["de-AT", "en"])).toBe("de");
 	expect(effectiveLocale("system", null, ["de-AT"])).toBe("en");
+	expect(effectiveLocale("system", null, ["zh-CN"])).toBe("zh");
+	expect(effectiveLocale("system", null, ["zh-Hant-TW"])).toBe("zh");
 	expect(effectiveLocale("de", snapshot, ["en"])).toBe("de");
 });

@@ -401,7 +401,8 @@ dependency. This keeps test process drivers outside both launchers and the serve
     rendered through one shared i18next instance (`@thinkrail/locales/react`). **A lint gate fails on
     hardcoded user-facing text** (JSX text and text-bearing attributes such as `aria-label`, `title`,
     `placeholder`, `alt`, `label`) in those trees, so a new string cannot ship without a key. ThinkRail
-    ships bundled catalogs (English only today); a user adds or overrides a language by dropping a flat
+    ships bundled catalogs (English and Simplified Chinese today); a user adds or overrides a language
+    by dropping a flat
     i18next-JSON file into the **global** data dir (`~/.thinkrail/locales/<tag>.json`) — never a
     workspace, so a cloned repo cannot rewrite the UI. The host validates and watches those files
     ([[submodule-server-locales]]) and serves them over the wire; the web merges them over the bundled
@@ -416,7 +417,8 @@ dependency. This keeps test process drivers outside both launchers and the serve
     Rejected: English-text keys (a wording fix orphans every translation); a host-served bundled catalog
     (bundled strings belong to the web build that renders them); an in-house runtime (i18next chosen for
     its standard format and tooling); catalogs in `contracts` (data and translation logic are not wire
-    types). Deferred: bundled non-English languages, RTL layout, an agent translation skill.
+    types). Deferred: bundled languages beyond English and Simplified Chinese, RTL layout, an agent
+    translation skill.
 
 ## Invariants
 

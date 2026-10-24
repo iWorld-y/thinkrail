@@ -216,14 +216,20 @@ export function i18nViolations(repoRoot: string): I18nViolation[] {
 
 const KEY_CONSUMER_ROOTS = [...I18N_ROOTS, "apps/desktop/src", "packages/locales/src"] as const;
 const PLURAL_SUFFIX = /_(?:zero|one|two|few|many|other)$/;
+const LOCALE_FILE = /^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8})*\.json$/;
+
+export function catalogSortProblems(fileName: string, catalogText: string): string[] {
+	const keys = Object.keys(JSON.parse(catalogText) as Record<string, unknown>);
+	const sorted = [...keys].sort();
+	return keys.some((key, index) => key !== sorted[index])
+		? [`${fileName}: keys are not sorted`]
+		: [];
+}
 
 export function catalogProblems(catalogText: string, sources: readonly string[]): string[] {
 	const catalog = JSON.parse(catalogText) as Record<string, unknown>;
 	const keys = Object.keys(catalog);
 	const problems: string[] = [];
-	const sorted = [...keys].sort();
-	if (keys.some((key, index) => key !== sorted[index]))
-		problems.push("en.json keys are not sorted");
 	for (const [key, value] of Object.entries(catalog)) {
 		if (typeof value !== "string" || value.length === 0)
 			problems.push(`${key}: not a non-empty string`);
@@ -260,7 +266,12 @@ function consumerSources(root: string): string[] {
 
 if (import.meta.main) {
 	const root = join(import.meta.dir, "..");
+	const localesDir = join(root, "packages/locales");
 	const violations = i18nViolations(root);
+	const sortProblems = readdirSync(localesDir)
+		.filter((name) => LOCALE_FILE.test(name))
+		.sort()
+		.flatMap((name) => catalogSortProblems(name, readFileSync(join(localesDir, name), "utf8")));
 	const problems = catalogProblems(
 		readFileSync(join(root, "packages/locales/en.json"), "utf8"),
 		consumerSources(root),
@@ -269,6 +280,10 @@ if (import.meta.main) {
 		console.error("Hardcoded UI text (use a key from packages/locales/en.json via useT/<T>):");
 		for (const v of violations) console.error(`  ${v.file}:${v.line}  ${JSON.stringify(v.text)}`);
 		console.error(`\n${violations.length} hardcoded string(s).`);
+	}
+	if (sortProblems.length > 0) {
+		console.error("packages/locales (one entry per locale, sorted like en.json):");
+		for (const problem of sortProblems) console.error(`  ${problem}`);
 	}
 	if (problems.length > 0) {
 		console.error("packages/locales/en.json:");
@@ -281,9 +296,10 @@ if (import.meta.main) {
 		);
 		for (const v of stale) console.error(`  ${v.file}:${v.line}  ${v.text}`);
 	}
-	if (violations.length > 0 || problems.length > 0 || stale.length > 0) process.exitCode = 1;
+	if (violations.length > 0 || problems.length > 0 || sortProblems.length > 0 || stale.length > 0)
+		process.exitCode = 1;
 	else
 		console.log(
-			"check-i18n: OK (no hardcoded UI text; catalog sorted and fully referenced; no render-time global translator)",
+			"check-i18n: OK (no hardcoded UI text; catalogs sorted; en.json fully referenced; no render-time global translator)",
 		);
 }

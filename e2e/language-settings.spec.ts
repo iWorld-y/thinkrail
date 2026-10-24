@@ -80,6 +80,23 @@ test("a local language file is listed, selectable, live-reloaded, and survives d
 	await expect(page.locator("html")).toHaveAttribute("lang", "de");
 });
 
+test("the bundled Chinese catalog is listed and renders the interface in Chinese", async ({
+	page,
+}) => {
+	await openFixtureProject(page);
+	const section = await openLanguageSettings(page);
+
+	const chinese = section.getByTestId("language-zh");
+	await expect(chinese).toContainText("中文");
+	await expect(chinese).toContainText("Built-in");
+
+	await chinese.click();
+	await expect(chinese).toHaveAttribute("data-active", "true");
+	await expect(page.locator("html")).toHaveAttribute("lang", "zh");
+	await expect(page.getByTestId("settings-nav-language")).toContainText("语言");
+	await expect(section).toContainText("添加语言");
+});
+
 test("switching language re-renders cached labels, markup strings and a mounted editor's controls, including live catalog edits", async ({
 	page,
 }) => {

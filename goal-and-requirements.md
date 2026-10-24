@@ -112,7 +112,8 @@ What ThinkRail does, at product level; the linked spec owns the detail.
   ([[submodule-server-agent]], [[submodule-web-panels]]).
 - **Around the workspace** — open a worktree in an installed editor or IDE, and keep the app itself up
   to date ([[submodule-server-editors]], [[submodule-web-updates]]).
-- **Interface language** — the UI follows the system language or the user's choice; English ships
+- **Interface language** — the UI follows the system language or the user's choice; English and
+  Simplified Chinese ship
   built-in, and a user adds or overrides a language with a flat JSON file in `~/.thinkrail/locales`, live
   on save. Agent and tool output is never translated ([[module-locales]], [[submodule-web-i18n]]).
 - **Brand** — ThinkRail green accent (bright on dark themes, deepened on light ones so it clears AA on

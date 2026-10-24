@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { catalogProblems, sourceViolations } from "./check-i18n";
+import { catalogProblems, catalogSortProblems, sourceViolations } from "./check-i18n";
 
 const texts = (source: string, path = "a.tsx") =>
 	sourceViolations(path, source).map((violation) => violation.text);
@@ -34,15 +34,19 @@ test("ignores symbols, the bare brand, and translated calls", () => {
 	expect(texts('const A = () => <span title="⌘K">{t("a.b")} · ThinkRail</span>;')).toEqual([]);
 });
 
-test("the catalog must be sorted, non-empty, and referenced", () => {
+test("the English catalog must be sorted, non-empty, and referenced", () => {
 	const catalog = JSON.stringify({ "a.b": "A", "c.d_one": "one", "c.d_other": "many", "z.y": "" });
 	expect(catalogProblems(catalog, ['t("a.b"); t("c.d", { count })'])).toEqual([
 		"z.y: not a non-empty string",
 		"z.y: not referenced by any source",
 	]);
-	expect(catalogProblems(JSON.stringify({ b: "1", a: "2" }), ['"a" "b"'])).toEqual([
-		"en.json keys are not sorted",
+});
+
+test("every locale file must be sorted by key", () => {
+	expect(catalogSortProblems("zh.json", JSON.stringify({ b: "1", a: "2" }))).toEqual([
+		"zh.json: keys are not sorted",
 	]);
+	expect(catalogSortProblems("zh.json", JSON.stringify({ a: "1", b: "2" }))).toEqual([]);
 });
 
 test("descends into JSX passed through props and handlers inside attributes", () => {
